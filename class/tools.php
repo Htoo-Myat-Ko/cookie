@@ -15,28 +15,31 @@
       setcookie($cookie_key, false, $time, $url);
     }
 
-    public function set_cookie_if_new($base_url)
+    public function set_cookie_if_new($pagetitle, $base_url)
     {
       $self_url = $this->get_self_url();
 
       if(!$_COOKIE["links"])
         {
-          $json_urls = $this->make_json($self_url);
+          $json_urls = $this->make_json($pagetitle, $self_url);
           setcookie("links", $json_urls, time()+$this->cookie_time, $base_url);
       } else {
-          $json_urls = $this->make_json($self_url, $_COOKIE["links"]);
+          $json_urls = $this->make_json($pagetitle, $self_url, $_COOKIE["links"]);
           $return_json = array();
           foreach(json_decode($json_urls, true) as $each) {
             if(sizeof($return_json) < 3) {
               $return_json[] = $each;
             }
           }
+
+
           $this->reset_cookie("links", time()-$this->cookie_time, $base_url);
+
           setcookie("links", json_encode($return_json), time()+$this->cookie_time, $base_url);
         }
     }
 
-    private function make_json($needle, $haystack = array())
+    private function make_json($pagetitle, $needle, $haystack = array())
     {
       if(!empty($haystack))
       {
@@ -45,15 +48,26 @@
             array_shift($haystack);
           }
 
-          if(in_array($needle, $haystack))
+          foreach($haystack as $key => $sub_haystack)
           {
-            unset($haystack[array_search($needle, $haystack)]);
+             if($sub_haystack["url"] == $needle)
+             {
+              unset($haystack[$key]);
+              break;
+             }
           }
+          //
+          // if(in_array($needle, $haystack))
+          // {
+          //   $key = array_search($needle, $haystack);
+          //   unset($haystack[$key]);
+          // }
 
-          array_unshift($haystack, $needle);
+          array_unshift($haystack, array("url" => $needle, "title" => $pagetitle));
 
       } else {
-        array_unshift($haystack, $needle);
+
+        array_unshift($haystack, array("url" => $needle, "title" => $pagetitle));
       }
 
       $json_format = json_encode($haystack);

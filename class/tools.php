@@ -1,13 +1,13 @@
 <?php
 
-  namespace hmk\tools;
+  namespace dev1\tools;
 
   class tools
   {
     private $cookie_time = 3600;
     private function get_self_url()
     {
-      return $_SERVER["PHP_SELF"];
+      return $_SERVER["REQUEST_URI"];
     }
 
     private function reset_cookie($cookie_key, $time, $url)
@@ -36,6 +36,56 @@
           $this->reset_cookie("links", time()-$this->cookie_time, $base_url);
 
           setcookie("links", json_encode($return_json), time()+$this->cookie_time, $base_url);
+        }
+    }
+
+
+    function get_string_between($string, $start, $end){
+    $string = ' ' . $string;
+    $ini = strpos($string, $start);
+    if ($ini == 0) return '';
+    $ini += strlen($start);
+    $len = strpos($string, $end, $ini) - $ini;
+    return substr($string, $ini, $len);
+    }
+
+    function replace_string_between($tagOne, $tagTwo, $text, $replacement)
+    {
+      $startTagPos = strrpos($text, $tagOne);
+      $endTagPos = strrpos($text, $tagTwo);
+      $tagLength = $endTagPos - $startTagPos + 12;
+
+      return $newText = substr_replace($text, $replacement,
+          $startTagPos, $tagLength);
+    }
+
+    function loop_replace($string, $arr)
+    {
+      foreach ($arr as $key => $value_arr)
+      {
+        $trans_arr = array();
+        foreach($value_arr as $key_value => $translate_value)
+        {
+          $trans_arr["{{" . $key_value . "}}"] = $translate_value;
+        }
+        $loop_data .= strtr($string, $trans_arr);
+      }
+      return $loop_data;
+    }
+
+    public function pull_template($path, $translate)
+    {
+        if($contents = file_get_contents($path))
+        {
+          $replace = $this->get_string_between($contents, "{foreach}", "{endforeach}");
+          if($replace)
+          {
+          $replacement = $this->loop_replace($replace, $translate);
+          $contents = $this->replace_string_between("{foreach}","{endforeach}", $contents, $replacement);
+          }
+          echo strtr($contents, $translate);
+        }else {
+        echo "<code>Template $path is missing.</code>";
         }
     }
 
